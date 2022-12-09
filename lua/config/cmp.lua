@@ -1,5 +1,8 @@
 local cmp = require 'cmp'
+local types = require("cmp.types")
+local str = require("cmp.utils.str")
 local luasnip = require 'luasnip'
+local lspkind = require('lspkind')
 
 cmp.setup {
     snippet = {
@@ -15,7 +18,7 @@ cmp.setup {
         ['<C-d>'] = cmp.mapping.scroll_docs(-4),
         ['<C-f>'] = cmp.mapping.scroll_docs(4),
         ['<C-Space>'] = cmp.mapping.complete(),
-        ['<CR>'] = cmp.mapping.confirm({select = true, }),
+        ['<CR>'] = cmp.mapping.confirm({ select = true, }),
         ['<Tab>'] = cmp.mapping(function(fallback)
             if cmp.visible() then
                 cmp.select_next_item()
@@ -37,9 +40,31 @@ cmp.setup {
     }),
     sources = cmp.config.sources({
         { name = 'nvim_lsp' },
-        { name = 'luasnip' },
-    }, {
         { name = 'buffer' },
+        { name = 'luasnip' },
         { name = 'path' },
+    }, {
     }),
+    formatting = {
+        fields = { "kind", "abbr", "menu" },
+        format = lspkind.cmp_format({
+            mode = 'symbol',
+            maxwidth = 60,
+            ellipsis_char = '...',
+
+            before = function(entry, vim_item)
+                local word = entry:get_insert_text()
+                if entry.completion_item.insertTextFormat == types.lsp.InsertTextFormat.Snippet then
+                    word = str.oneline(vim.lsp.util.parse_snippet(word))
+                    if string.sub(vim_item.abbr, -1, -1) == "~" then
+                        word = word .. "~"
+                    end
+                else
+                    word = str.oneline(word)
+                end
+                vim_item.abbr = word
+                return vim_item
+            end
+        })
+    }
 }
